@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 2 1 * *'   # setiap 1hb bulan, 2 pagi UTC (~10 pagi MYT)
   workflow_dispatch:        # boleh jalankan manual dari tab Actions
+  permissions:
+  contents: write
 
 jobs:
   kemaskini:
