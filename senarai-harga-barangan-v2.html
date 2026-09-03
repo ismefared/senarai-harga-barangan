@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Senarai Harga Barangan Asas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --papan: #1c3b36;       /* signboard teal-green */
+    --papan-dark: #12261f;
+    --kertas: #f4efe1;      /* warm paper */
+    --kertas-line: #ddd2b0;
+    --kunyit: #dd9c34;      /* turmeric gold */
+    --kunyit-dark: #b87c1f;
+    --cili: #b8462f;        /* chili red, sparingly */
+    --ink: #2a2420;
+    --ink-soft: #6f6656;
+    --white: #fffdf8;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--kertas);
+    color: var(--ink);
+  }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding-bottom: 60px;
+  }
+
+  /* --- Papan tanda header --- */
+  .signboard {
+    background: var(--papan);
+    background-image: linear-gradient(180deg, var(--papan) 0%, var(--papan-dark) 100%);
+    padding: 40px 24px 28px;
+    text-align: center;
+    border-bottom: 4px solid var(--kunyit);
+  }
+
+  .signboard h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: 2rem;
+    color: var(--kertas);
+    margin: 0 0 8px 0;
+    letter-spacing: 0.3px;
+  }
+
+  .signboard p {
+    margin: 0;
+    color: #c9d6ce;
+    font-size: 0.92rem;
+  }
+
+  /* --- Bar melekat (carian + kumpulan + kategori) --- */
+  .bar-melekat {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--kertas);
+    padding-bottom: 6px;
+    box-shadow: 0 6px 10px -8px rgba(28, 59, 54, 0.25);
+  }
+
+  /* --- Toggle kumpulan (Semua / Makanan / Rumah) --- */
+  .kumpulan-toggle {
+    display: flex;
+    gap: 4px;
+    margin: 14px 20px 0;
+    padding: 3px;
+    background: var(--kertas-line);
+    border-radius: 999px;
+  }
+
+  .kumpulan-btn {
+    flex: 1;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .kumpulan-btn.aktif {
+    background: var(--white);
+    color: var(--papan);
+    box-shadow: 0 1px 3px rgba(28, 59, 54, 0.18);
+  }
+
+  /* --- Carian --- */
+  .carian-wrap {
+    padding: 20px 20px 0;
+  }
+
+  .carian-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .carian-box svg {
+    position: absolute;
+    left: 16px;
+    width: 18px;
+    height: 18px;
+    stroke: var(--ink-soft);
+    pointer-events: none;
+  }
+
+  #carianInput {
+    width: 100%;
+    padding: 13px 16px 13px 44px;
+    font-family: inherit;
+    font-size: 1rem;
+    border: 1.5px solid var(--kertas-line);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--ink);
+  }
+
+  #carianInput:focus {
+    outline: none;
+    border-color: var(--kunyit);
+    box-shadow: 0 0 0 3px rgba(221, 156, 52, 0.18);
+  }
+
+  #kosongBtn {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 6px 10px;
+    display: none;
+  }
+
+  /* --- Penapis kategori --- */
+  .kategori-filter-wrap {
+    position: relative;
+    margin: 16px 0 4px;
+  }
+
+  .kategori-filter {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+    padding: 4px 20px;
+    scrollbar-width: none;
+    cursor: grab;
+  }
+  .kategori-filter::-webkit-scrollbar { display: none; }
+  .kategori-filter.menyeret { cursor: grabbing; scroll-behavior: auto; }
+
+  /* kesan pudar di tepi supaya jelas ada lagi tab tersembunyi */
+  .fade-kiri, .fade-kanan {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 30px;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.15s ease;
+  }
+  .fade-kiri {
+    left: 0;
+    background: linear-gradient(90deg, var(--kertas) 10%, transparent);
+  }
+  .fade-kanan {
+    right: 0;
+    background: linear-gradient(270deg, var(--kertas) 10%, transparent);
+  }
+
+  .tatal-btn {
+    display: none;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--kertas-line);
+    background: var(--white);
+    color: var(--papan);
+    font-size: 1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 2px 6px rgba(28, 59, 54, 0.15);
+  }
+  .tatal-btn:hover { background: var(--papan); color: var(--white); border-color: var(--papan); }
+  .tatal-btn.kiri { left: 6px; }
+  .tatal-btn.kanan { right: 6px; }
+
+  .pill {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: 1.5px solid var(--kertas-line);
+    background: var(--white);
+    color: var(--ink-soft);
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .pill.aktif {
+    background: var(--papan);
+    border-color: var(--papan);
+    color: var(--white);
+  }
+
+  /* --- Seksyen kategori --- */
+  .seksyen {
+    margin: 26px 20px 0;
+  }
+
+  .seksyen h2 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--kunyit-dark);
+    margin: 0 0 10px 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .seksyen h2 .ikon {
+    font-size: 0.95rem;
+  }
+
+  .seksyen h2 .kiraan {
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .seksyen h2::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--kertas-line);
+  }
+
+  .senarai {
+    background: var(--white);
+    border: 1px solid var(--kertas-line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .baris {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--kertas-line);
+  }
+  .baris:first-child { border-top: none; }
+
+  .baris .nama {
+    font-size: 1rem;
+    font-weight: 500;
+  }
+  .baris .unit-tag {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-left: 6px;
+  }
+
+  .baris .harga {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--cili);
+    white-space: nowrap;
+  }
+
+  .harga-input {
+    width: 96px;
+    padding: 6px 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    border: 1.5px solid var(--papan);
+    border-radius: 6px;
+    text-align: right;
+    background: var(--kertas);
+    color: var(--ink);
+  }
+  .harga-input:focus {
+    outline: 2px solid var(--kunyit);
+    outline-offset: 1px;
+  }
+
+  .tiada-hasil {
+    margin: 40px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  /* --- Footer aksi --- */
+  .aksi {
+    margin: 32px 20px 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  /* --- Trend harga barang utama --- */
+  .trend-bhg {
+    margin: 28px 20px 0;
+  }
+
+  .trend-bhg h2 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--kunyit-dark);
+    margin: 0 0 4px 2px;
+  }
+
+  .trend-nota {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin: 0 0 12px 2px;
+    line-height: 1.5;
+  }
+
+  .trend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .trend-kad {
+    background: var(--white);
+    border: 1px solid var(--kertas-line);
+    border-radius: 10px;
+    padding: 14px;
+  }
+
+  .trend-kad .tajuk {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .trend-kad .tajuk .nama {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .trend-kad .harga-semasa {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin: 2px 0 4px;
+  }
+
+  .trend-kad .perubahan {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .trend-kad .perubahan.naik { background: rgba(184, 70, 47, 0.12); color: var(--cili); }
+  .trend-kad .perubahan.turun { background: rgba(63, 107, 63, 0.12); color: #3f6b3f; }
+  .trend-kad .perubahan.tetap { background: rgba(111, 102, 86, 0.12); color: var(--ink-soft); }
+
+  .trend-kad svg { display: block; margin-top: 6px; }
+
+  /* --- Panel sumber data rasmi --- */
+  .sumber-bhg {
+    margin: 26px 20px 0;
+    background: var(--white);
+    border: 1px solid var(--kertas-line);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .sumber-bhg h2 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--kunyit-dark);
+    margin: 0 0 4px 0;
+  }
+
+  .sumber-bhg p {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin: 0 0 12px 0;
+  }
+
+  .sumber-senarai {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sumber-pautan {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--kertas-line);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 0.86rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .sumber-pautan:hover { border-color: var(--papan); background: #fbf8ee; }
+  .sumber-pautan .nama-sumber { font-weight: 600; }
+  .sumber-pautan .desk-sumber { color: var(--ink-soft); font-size: 0.76rem; display: block; margin-top: 2px; }
+  .sumber-pautan .anak-panah { color: var(--kunyit-dark); font-size: 1.1rem; flex-shrink: 0; }
+
+  button.utama {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    background: var(--kunyit);
+    color: var(--papan-dark);
+    transition: background 0.15s ease;
+  }
+  button.utama:hover { background: var(--kunyit-dark); color: var(--white); }
+
+  button.sekunder {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 999px;
+    border: 1.5px solid var(--kertas-line);
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    display: none;
+  }
+  button.sekunder:hover { background: var(--white); }
+
+  .status {
+    margin: 14px 20px 0;
+    text-align: right;
+    font-size: 0.82rem;
+    color: var(--papan);
+    font-weight: 600;
+    min-height: 1.2em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .status.show { opacity: 1; }
+
+  @media (max-width: 420px) {
+    .signboard h1 { font-size: 1.6rem; }
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="signboard">
+    <h1>Senarai Harga Barangan Asas</h1>
+    <p>Anggaran perbelanjaan keperluan keluarga sederhana</p>
+  </div>
+
+  <div class="trend-bhg">
+    <h2>📈 Trend Harga — 5 Barang Utama</h2>
+    <p class="trend-nota">Titik terkini dipetik dari laporan awam data PriceCatcher KPDN (Julai 2026); titik pertengahan dianggarkan. <strong>Belum sambungan automatik</strong> — lihat panduan seni bina backend untuk sambung terus.</p>
+    <p class="trend-nota" id="statusTrendFetch" style="font-style: italic;"></p>
+    <div class="trend-grid" id="trendGrid"></div>
+  </div>
+
+  <div class="sumber-bhg">
+    <h2>🔗 Sumber Data Rasmi</h2>
+    <p>Aplikasi ini <strong>tidak boleh menyambung terus secara automatik masa nyata</strong> ke pangkalan data KPDN kerana sebab teknikal (lihat penjelasan di bawah chat). Gunakan pautan rasmi ini untuk semak harga terkini ikut lokasi/premis anda:</p>
+    <div class="sumber-senarai" id="sumberSenarai"></div>
+  </div>
+
+
+    <div class="carian-wrap">
+      <div class="carian-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="carianInput" placeholder="Cari barang, contoh: beras, ayam...">
+        <button id="kosongBtn" aria-label="Kosongkan carian">&times;</button>
+      </div>
+    </div>
+
+    <div class="kumpulan-toggle" id="kumpulanToggle"></div>
+
+    <div class="kategori-filter-wrap">
+      <button class="tatal-btn kiri" id="kategoriKiri" aria-label="Tatal kategori ke kiri">&lsaquo;</button>
+      <div class="fade-kiri" id="fadeKiri"></div>
+      <div class="kategori-filter" id="kategoriFilter"></div>
+      <div class="fade-kanan" id="fadeKanan"></div>
+      <button class="tatal-btn kanan" id="kategoriKanan" aria-label="Tatal kategori ke kanan">&rsaquo;</button>
+    </div>
+  </div>
+
+  <div id="kandungan"></div>
+
+  <div class="aksi">
+    <button class="sekunder" id="btnBatal">Batal</button>
+    <button class="utama" id="btnKemaskini">Kemaskini Harga</button>
+  </div>
+  <div class="status" id="statusMsg">Harga telah dikemaskini.</div>
+</main>
+
+<script>
+  let barangan = [
+    { nama: 'Beras', unit: '10kg', harga: 28, kategori: 'Bijirin & Minyak' },
+    { nama: 'Beras wangi/basmathi', unit: '5kg', harga: 25, kategori: 'Bijirin & Minyak' },
+    { nama: 'Beras perang', unit: '2kg', harga: 12, kategori: 'Bijirin & Minyak' },
+    { nama: 'Minyak masak', unit: '1kg', harga: 7, kategori: 'Bijirin & Minyak' },
+    { nama: 'Minyak zaitun', unit: '500ml', harga: 19.90, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung gandum (serbaguna)', unit: '1kg', harga: 2.60, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung gandum penuh', unit: '1kg', harga: 4.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung naik sendiri', unit: '1kg', harga: 3.20, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung roti (protein tinggi)', unit: '1kg', harga: 3.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung jagung', unit: '300g', harga: 2.80, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung beras', unit: '500g', harga: 2.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung pulut', unit: '500g', harga: 3.00, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung ubi kayu (kanji)', unit: '500g', harga: 2.80, kategori: 'Bijirin & Minyak' },
+    { nama: 'Tepung kastard', unit: '300g', harga: 4.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Yis segera (instant yeast)', unit: '100g', harga: 3.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Gula pasir', unit: '1kg', harga: 2.85, kategori: 'Bijirin & Minyak' },
+    { nama: 'Garam', unit: '500g', harga: 1.20, kategori: 'Bijirin & Minyak' },
+    { nama: 'Bihun', unit: '400g', harga: 2.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Mihun', unit: '400g', harga: 2.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Mi kuning', unit: '500g', harga: 3.00, kategori: 'Bijirin & Minyak' },
+    { nama: 'Spageti', unit: '500g', harga: 4.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Mi segera', unit: '1 kotak (5 pek)', harga: 6.50, kategori: 'Bijirin & Minyak' },
+    { nama: 'Oat', unit: '500g', harga: 8.90, kategori: 'Bijirin & Minyak' },
+
+    { nama: 'Ayam', unit: '1kg', harga: 10, kategori: 'Protein' },
+    { nama: 'Ikan kembung', unit: '1kg', harga: 12, kategori: 'Protein' },
+    { nama: 'Daging lembu', unit: '1kg', harga: 32, kategori: 'Protein' },
+    { nama: 'Telur gred A', unit: '30 biji (tray)', harga: 15.00, kategori: 'Protein' },
+    { nama: 'Telur gred A', unit: '10 biji', harga: 5.20, kategori: 'Protein' },
+    { nama: 'Telur gred A', unit: '6 biji', harga: 3.20, kategori: 'Protein' },
+    { nama: 'Telur gred B', unit: '30 biji (tray)', harga: 13.50, kategori: 'Protein' },
+    { nama: 'Telur gred B', unit: '10 biji', harga: 4.70, kategori: 'Protein' },
+    { nama: 'Telur gred B', unit: '6 biji', harga: 2.90, kategori: 'Protein' },
+    { nama: 'Telur gred C', unit: '30 biji (tray)', harga: 12.00, kategori: 'Protein' },
+    { nama: 'Telur gred C', unit: '10 biji', harga: 4.20, kategori: 'Protein' },
+    { nama: 'Telur gred C', unit: '6 biji', harga: 2.60, kategori: 'Protein' },
+    { nama: 'Udang', unit: '1kg', harga: 22, kategori: 'Protein' },
+    { nama: 'Sotong', unit: '1kg', harga: 18, kategori: 'Protein' },
+    { nama: 'Ikan bilis', unit: '250g', harga: 9, kategori: 'Protein' },
+    { nama: 'Tauhu', unit: '1 pek (5 keping)', harga: 2.50, kategori: 'Protein' },
+    { nama: 'Tempe', unit: '250g', harga: 2.80, kategori: 'Protein' },
+    { nama: 'Kacang dal', unit: '500g', harga: 4.50, kategori: 'Protein' },
+
+    { nama: 'Sayur kangkung', unit: '1 ikat', harga: 2, kategori: 'Sayur-sayuran' },
+    { nama: 'Bayam', unit: '1 ikat', harga: 2, kategori: 'Sayur-sayuran' },
+    { nama: 'Sawi', unit: '1 ikat', harga: 2.50, kategori: 'Sayur-sayuran' },
+    { nama: 'Kacang panjang', unit: '1 ikat', harga: 2.50, kategori: 'Sayur-sayuran' },
+    { nama: 'Terung', unit: '1kg', harga: 4, kategori: 'Sayur-sayuran' },
+    { nama: 'Timun', unit: '1kg', harga: 2.50, kategori: 'Sayur-sayuran' },
+    { nama: 'Tomato', unit: '1kg', harga: 5, kategori: 'Sayur-sayuran' },
+    { nama: 'Kubis bulat', unit: '1kg', harga: 3, kategori: 'Sayur-sayuran' },
+    { nama: 'Lobak merah', unit: '1kg', harga: 4.50, kategori: 'Sayur-sayuran' },
+    { nama: 'Kentang', unit: '1kg', harga: 4, kategori: 'Sayur-sayuran' },
+    { nama: 'Bawang besar', unit: '1kg', harga: 4.50, kategori: 'Sayur-sayuran' },
+    { nama: 'Bawang putih', unit: '1kg', harga: 9, kategori: 'Sayur-sayuran' },
+    { nama: 'Cili merah', unit: '1kg', harga: 10, kategori: 'Sayur-sayuran' },
+    { nama: 'Cili padi', unit: '1kg', harga: 14, kategori: 'Sayur-sayuran' },
+    { nama: 'Halia', unit: '1kg', harga: 8, kategori: 'Sayur-sayuran' },
+    { nama: 'Serai', unit: '1 ikat', harga: 1.50, kategori: 'Sayur-sayuran' },
+    { nama: 'Brokoli', unit: '1kg', harga: 9, kategori: 'Sayur-sayuran' },
+    { nama: 'Kailan', unit: '1 ikat', harga: 3, kategori: 'Sayur-sayuran' },
+    { nama: 'Taugeh', unit: '500g', harga: 1.80, kategori: 'Sayur-sayuran' },
+    { nama: 'Bendi', unit: '1kg', harga: 4.50, kategori: 'Sayur-sayuran' },
+    { nama: 'Peria', unit: '1kg', harga: 5, kategori: 'Sayur-sayuran' },
+
+    { nama: 'Pisang berangan', unit: '1 sisir', harga: 5, kategori: 'Buah-buahan' },
+    { nama: 'Betik', unit: '1kg', harga: 3.50, kategori: 'Buah-buahan' },
+    { nama: 'Tembikai', unit: '1kg', harga: 2.50, kategori: 'Buah-buahan' },
+    { nama: 'Nanas', unit: '1 biji', harga: 4, kategori: 'Buah-buahan' },
+    { nama: 'Mangga harum manis', unit: '1kg', harga: 10, kategori: 'Buah-buahan' },
+    { nama: 'Epal fuji', unit: '1kg', harga: 9, kategori: 'Buah-buahan' },
+    { nama: 'Oren mandarin', unit: '1kg', harga: 8, kategori: 'Buah-buahan' },
+    { nama: 'Limau nipis', unit: '1kg', harga: 6, kategori: 'Buah-buahan' },
+    { nama: 'Jambu batu', unit: '1kg', harga: 5, kategori: 'Buah-buahan' },
+    { nama: 'Rambutan', unit: '1kg', harga: 6, kategori: 'Buah-buahan' },
+    { nama: 'Ciku', unit: '1kg', harga: 7, kategori: 'Buah-buahan' },
+    { nama: 'Longan', unit: '1kg', harga: 12, kategori: 'Buah-buahan' },
+    { nama: 'Anggur', unit: '1kg', harga: 14, kategori: 'Buah-buahan' },
+    { nama: 'Strawberi', unit: '250g', harga: 9.90, kategori: 'Buah-buahan' },
+    { nama: 'Avokado', unit: '1kg', harga: 12, kategori: 'Buah-buahan' },
+    { nama: 'Buah naga', unit: '1kg', harga: 8, kategori: 'Buah-buahan' },
+
+    { nama: 'Serbuk kunyit', unit: '100g', harga: 2.50, kategori: 'Rempah Masakan' },
+    { nama: 'Kunyit hidup', unit: '250g', harga: 2.00, kategori: 'Rempah Masakan' },
+    { nama: 'Serbuk ketumbar', unit: '100g', harga: 2.20, kategori: 'Rempah Masakan' },
+    { nama: 'Jintan putih', unit: '100g', harga: 3.50, kategori: 'Rempah Masakan' },
+    { nama: 'Jintan manis', unit: '100g', harga: 3.80, kategori: 'Rempah Masakan' },
+    { nama: 'Halba', unit: '100g', harga: 2.00, kategori: 'Rempah Masakan' },
+    { nama: 'Lada hitam serbuk', unit: '100g', harga: 4.50, kategori: 'Rempah Masakan' },
+    { nama: 'Lada putih serbuk', unit: '100g', harga: 5.00, kategori: 'Rempah Masakan' },
+    { nama: 'Kayu manis', unit: '50g', harga: 3.00, kategori: 'Rempah Masakan' },
+    { nama: 'Bunga lawang', unit: '50g', harga: 4.00, kategori: 'Rempah Masakan' },
+    { nama: 'Buah pelaga', unit: '50g', harga: 6.50, kategori: 'Rempah Masakan' },
+    { nama: 'Cengkih', unit: '50g', harga: 4.50, kategori: 'Rempah Masakan' },
+    { nama: 'Biji sawi', unit: '100g', harga: 2.50, kategori: 'Rempah Masakan' },
+    { nama: 'Serbuk kari ayam/daging', unit: '250g', harga: 5.50, kategori: 'Rempah Masakan' },
+    { nama: 'Serbuk rempah ratus', unit: '100g', harga: 4.00, kategori: 'Rempah Masakan' },
+    { nama: 'Asam jawa', unit: '200g', harga: 3.00, kategori: 'Rempah Masakan' },
+    { nama: 'Asam keping', unit: '100g', harga: 3.50, kategori: 'Rempah Masakan' },
+    { nama: 'Belacan', unit: '250g', harga: 6.00, kategori: 'Rempah Masakan' },
+    { nama: 'Bawang goreng', unit: '100g', harga: 4.50, kategori: 'Rempah Masakan' },
+
+    { nama: 'Sos cili', unit: '340g', harga: 3.50, kategori: 'Sos & Perencah' },
+    { nama: 'Sos tomato', unit: '340g', harga: 3.20, kategori: 'Sos & Perencah' },
+    { nama: 'Kicap manis', unit: '500ml', harga: 4.50, kategori: 'Sos & Perencah' },
+    { nama: 'Kicap masin', unit: '500ml', harga: 4.00, kategori: 'Sos & Perencah' },
+    { nama: 'Kicap cair (light soy)', unit: '500ml', harga: 4.20, kategori: 'Sos & Perencah' },
+    { nama: 'Sos tiram', unit: '500ml', harga: 6.50, kategori: 'Sos & Perencah' },
+    { nama: 'Sos ikan', unit: '300ml', harga: 3.80, kategori: 'Sos & Perencah' },
+    { nama: 'Sos lada hitam', unit: '250g', harga: 5.00, kategori: 'Sos & Perencah' },
+    { nama: 'Sos inggeris (Worcestershire)', unit: '150ml', harga: 8.90, kategori: 'Sos & Perencah' },
+    { nama: 'Cuka', unit: '500ml', harga: 2.50, kategori: 'Sos & Perencah' },
+    { nama: 'Mayonis', unit: '400g', harga: 7.90, kategori: 'Sos & Perencah' },
+    { nama: 'Mustard', unit: '200g', harga: 6.50, kategori: 'Sos & Perencah' },
+    { nama: 'Sambal siap (belacan)', unit: '200g', harga: 4.50, kategori: 'Sos & Perencah' },
+    { nama: 'Perencah ayam masak merah', unit: '200g', harga: 3.90, kategori: 'Sos & Perencah' },
+
+    { nama: 'Susu tepung penuh krim', unit: '900g', harga: 24, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Susu tepung skim', unit: '900g', harga: 26, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Susu segar', unit: '1L', harga: 7.50, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Susu pekat manis', unit: '500g', harga: 4.50, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Susu cair sejat (evaporated)', unit: '390g', harga: 3.20, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Susu UHT kotak', unit: '1L', harga: 6.50, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Susu soya', unit: '1L', harga: 4.80, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Susu badam', unit: '1L', harga: 9.90, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Yogurt', unit: '150g', harga: 2.50, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Keju slice', unit: '200g', harga: 8.90, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Mentega', unit: '250g', harga: 9.50, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Marjerin', unit: '250g', harga: 4.50, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Krim masak', unit: '250ml', harga: 5.50, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Roti gandum', unit: '1 bungkus', harga: 3.80, kategori: 'Tenusu & Bakeri' },
+    { nama: 'Roti putih', unit: '1 bungkus', harga: 3.20, kategori: 'Tenusu & Bakeri' },
+
+    { nama: 'Gas masak (LPG)', unit: '14kg', harga: 26.60, kategori: 'Keperluan Rumah' },
+    { nama: 'Sabun mandi', unit: '3 batang', harga: 5.50, kategori: 'Keperluan Rumah' },
+    { nama: 'Syampu', unit: '750ml', harga: 12.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Ubat gigi', unit: '175g', harga: 6.50, kategori: 'Keperluan Rumah' },
+    { nama: 'Berus gigi', unit: '1 batang', harga: 3.50, kategori: 'Keperluan Rumah' },
+    { nama: 'Sabun cuci tangan cecair', unit: '500ml', harga: 8.50, kategori: 'Keperluan Rumah' },
+    { nama: 'Sabun basuh pinggan', unit: '900ml', harga: 7.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Span basuh pinggan', unit: '3 keping', harga: 3.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Serbuk basuh pakaian', unit: '3.5kg', harga: 19.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Pelembut fabrik', unit: '1.6L', harga: 10.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Pencuci lantai', unit: '1L', harga: 8.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Pencuci tandas', unit: '500ml', harga: 6.50, kategori: 'Keperluan Rumah' },
+    { nama: 'Pembersih kaca', unit: '500ml', harga: 7.50, kategori: 'Keperluan Rumah' },
+    { nama: 'Tisu muka', unit: '1 kotak', harga: 4.50, kategori: 'Keperluan Rumah' },
+    { nama: 'Tisu tandas', unit: '10 gulung', harga: 12.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Beg sampah', unit: '1 gulung (30 keping)', harga: 5.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Racun serangga semburan', unit: '600ml', harga: 11.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Pewangi bilik', unit: '300ml', harga: 9.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Bateri AA', unit: '4 biji', harga: 6.90, kategori: 'Keperluan Rumah' },
+    { nama: 'Mentol lampu LED', unit: '1 biji', harga: 8.90, kategori: 'Keperluan Rumah' },
+
+    { nama: 'Lampin pakai buang (saiz M)', unit: '1 pek (~50 keping)', harga: 45.90, kategori: 'Barangan Bayi' },
+    { nama: 'Susu formula bayi', unit: '900g', harga: 65.00, kategori: 'Barangan Bayi' },
+    { nama: 'Tisu basah bayi', unit: '1 pek (80 helai)', harga: 7.90, kategori: 'Barangan Bayi' },
+    { nama: 'Losyen bayi', unit: '200ml', harga: 12.90, kategori: 'Barangan Bayi' },
+    { nama: 'Sabun & syampu bayi', unit: '200ml', harga: 10.90, kategori: 'Barangan Bayi' },
+    { nama: 'Bedak bayi', unit: '100g', harga: 6.50, kategori: 'Barangan Bayi' },
+    { nama: 'Botol susu bayi', unit: '1 botol (240ml)', harga: 15.90, kategori: 'Barangan Bayi' },
+    { nama: 'Bijirin sarapan bayi', unit: '250g', harga: 14.90, kategori: 'Barangan Bayi' },
+    { nama: 'Minyak telon bayi', unit: '60ml', harga: 7.50, kategori: 'Barangan Bayi' },
+    { nama: 'Pad penyusuan', unit: '1 pek (24 keping)', harga: 9.90, kategori: 'Barangan Bayi' },
+
+    { nama: 'Makanan kering kucing', unit: '1kg', harga: 12.90, kategori: 'Penjagaan Haiwan Peliharaan' },
+    { nama: 'Makanan basah kucing', unit: '1 tin (400g)', harga: 3.50, kategori: 'Penjagaan Haiwan Peliharaan' },
+    { nama: 'Makanan kering anjing', unit: '1kg', harga: 14.90, kategori: 'Penjagaan Haiwan Peliharaan' },
+    { nama: 'Pasir kucing', unit: '5L', harga: 13.90, kategori: 'Penjagaan Haiwan Peliharaan' },
+    { nama: 'Syampu haiwan peliharaan', unit: '250ml', harga: 11.90, kategori: 'Penjagaan Haiwan Peliharaan' },
+    { nama: 'Snek haiwan peliharaan', unit: '1 pek', harga: 8.90, kategori: 'Penjagaan Haiwan Peliharaan' },
+    { nama: 'Vitamin haiwan peliharaan', unit: '1 botol', harga: 19.90, kategori: 'Penjagaan Haiwan Peliharaan' },
+    { nama: 'Mangkuk makanan haiwan', unit: '1 set', harga: 15.90, kategori: 'Penjagaan Haiwan Peliharaan' },
+    { nama: 'Tali leher haiwan peliharaan', unit: '1 unit', harga: 18.90, kategori: 'Penjagaan Haiwan Peliharaan' }
+  ];
+
+  const susunanKategori = [
+    'Bijirin & Minyak', 'Protein', 'Sayur-sayuran', 'Buah-buahan', 'Rempah Masakan', 'Sos & Perencah', 'Tenusu & Bakeri',
+    'Keperluan Rumah', 'Barangan Bayi', 'Penjagaan Haiwan Peliharaan'
+  ];
+
+  const kumpulanKategori = {
+    'Bijirin & Minyak': 'makanan',
+    'Protein': 'makanan',
+    'Sayur-sayuran': 'makanan',
+    'Buah-buahan': 'makanan',
+    'Rempah Masakan': 'makanan',
+    'Sos & Perencah': 'makanan',
+    'Tenusu & Bakeri': 'makanan',
+    'Keperluan Rumah': 'rumah',
+    'Barangan Bayi': 'rumah',
+    'Penjagaan Haiwan Peliharaan': 'rumah'
+  };
+
+  const ikonKategori = {
+    'Bijirin & Minyak': '🌾',
+    'Protein': '🍗',
+    'Sayur-sayuran': '🥬',
+    'Buah-buahan': '🍎',
+    'Rempah Masakan': '🌶️',
+    'Sos & Perencah': '🍶',
+    'Tenusu & Bakeri': '🥛',
+    'Keperluan Rumah': '🧴',
+    'Barangan Bayi': '🍼',
+    'Penjagaan Haiwan Peliharaan': '🐾'
+  };
+
+  const kumpulanSenarai = [
+    { id: 'semua', label: 'Semua' },
+    { id: 'makanan', label: 'Makanan & Masakan' },
+    { id: 'rumah', label: 'Rumah & Peribadi' }
+  ];
+
+  let modeEdit = false;
+  let kataCarian = '';
+  let kategoriAktif = 'Semua';
+  let kumpulanAktif = 'semua';
+
+  const kandungan = document.getElementById('kandungan');
+  const kumpulanToggle = document.getElementById('kumpulanToggle');
+  const kategoriFilter = document.getElementById('kategoriFilter');
+  const kategoriKiri = document.getElementById('kategoriKiri');
+  const kategoriKanan = document.getElementById('kategoriKanan');
+  const fadeKiri = document.getElementById('fadeKiri');
+  const fadeKanan = document.getElementById('fadeKanan');
+  const carianInput = document.getElementById('carianInput');
+  const kosongBtn = document.getElementById('kosongBtn');
+  const btnKemaskini = document.getElementById('btnKemaskini');
+  const btnBatal = document.getElementById('btnBatal');
+  const statusMsg = document.getElementById('statusMsg');
+
+  function paparKumpulan() {
+    kumpulanToggle.innerHTML = '';
+    kumpulanSenarai.forEach((kp) => {
+      const btn = document.createElement('button');
+      btn.className = 'kumpulan-btn' + (kp.id === kumpulanAktif ? ' aktif' : '');
+      btn.textContent = kp.label;
+      btn.addEventListener('click', () => {
+        if (kumpulanAktif === kp.id) return;
+        kumpulanAktif = kp.id;
+        kategoriAktif = 'Semua';
+        papar();
+      });
+      kumpulanToggle.appendChild(btn);
+    });
+  }
+
+  function paparPill() {
+    const kategoriDalamKumpulan = susunanKategori.filter(
+      (k) => kumpulanAktif === 'semua' || kumpulanKategori[k] === kumpulanAktif
+    );
+    const semuaKategori = ['Semua', ...kategoriDalamKumpulan];
+    kategoriFilter.innerHTML = '';
+    semuaKategori.forEach((k) => {
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (k === kategoriAktif ? ' aktif' : '');
+      btn.textContent = (ikonKategori[k] ? ikonKategori[k] + ' ' : '') + k;
+      btn.addEventListener('click', () => {
+        kategoriAktif = k;
+        papar();
+      });
+      kategoriFilter.appendChild(btn);
+    });
+    // beri masa untuk DOM ukur lebar sebenar sebelum semak keperluan tatal
+    requestAnimationFrame(kemaskiniPenunjukTatal);
+  }
+
+  function kemaskiniPenunjukTatal() {
+    const bolehTatal = kategoriFilter.scrollWidth > kategoriFilter.clientWidth + 2;
+    const diHujungKiri = kategoriFilter.scrollLeft <= 2;
+    const diHujungKanan = kategoriFilter.scrollLeft >= kategoriFilter.scrollWidth - kategoriFilter.clientWidth - 2;
+
+    kategoriKiri.style.display = bolehTatal && !diHujungKiri ? 'flex' : 'none';
+    kategoriKanan.style.display = bolehTatal && !diHujungKanan ? 'flex' : 'none';
+    fadeKiri.style.opacity = bolehTatal && !diHujungKiri ? '1' : '0';
+    fadeKanan.style.opacity = bolehTatal && !diHujungKanan ? '1' : '0';
+  }
+
+  kategoriKiri.addEventListener('click', () => {
+    kategoriFilter.scrollBy({ left: -150, behavior: 'smooth' });
+  });
+  kategoriKanan.addEventListener('click', () => {
+    kategoriFilter.scrollBy({ left: 150, behavior: 'smooth' });
+  });
+
+  kategoriFilter.addEventListener('scroll', kemaskiniPenunjukTatal);
+  window.addEventListener('resize', kemaskiniPenunjukTatal);
+
+  // benarkan roda tetikus menegak menatal senarai kategori secara mendatar
+  kategoriFilter.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      kategoriFilter.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+
+  // benarkan seret guna tetikus (untuk desktop tanpa trackpad) tanpa menyekat klik pil
+  // sentuhan/jari dibiarkan guna tatalan asli pelayar sebab ia sudah berfungsi baik
+  let sedangSeret = false;
+  let gerakSignifikan = false;
+  let mulaX = 0;
+  let mulaScroll = 0;
+  let pointerIdAktif = null;
+  const AMBANG_SERET = 6; // piksel — pergerakan bawah ini dianggap klik, bukan seret
+
+  kategoriFilter.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    sedangSeret = true;
+    gerakSignifikan = false;
+    mulaX = e.clientX;
+    mulaScroll = kategoriFilter.scrollLeft;
+    pointerIdAktif = e.pointerId;
+  });
+
+  kategoriFilter.addEventListener('pointermove', (e) => {
+    if (!sedangSeret) return;
+    const delta = e.clientX - mulaX;
+
+    if (!gerakSignifikan && Math.abs(delta) > AMBANG_SERET) {
+      gerakSignifikan = true;
+      kategoriFilter.classList.add('menyeret');
+      // hanya tangkap pointer bila memang seret berlaku, supaya klik pil biasa tidak terjejas
+      kategoriFilter.setPointerCapture(pointerIdAktif);
+    }
+
+    if (gerakSignifikan) {
+      kategoriFilter.scrollLeft = mulaScroll - delta;
+    }
+  });
+
+  function berhentiSeret() {
+    if (gerakSignifikan) {
+      // elak klik "hantu" pada pil tercetus sejurus selepas seret berhenti
+      kategoriFilter.addEventListener('click', sekatKlikSelepasSeret, { capture: true, once: true });
+    }
+    sedangSeret = false;
+    gerakSignifikan = false;
+    kategoriFilter.classList.remove('menyeret');
+  }
+  function sekatKlikSelepasSeret(e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+
+  kategoriFilter.addEventListener('pointerup', berhentiSeret);
+  kategoriFilter.addEventListener('pointercancel', berhentiSeret);
+  kategoriFilter.addEventListener('pointerleave', berhentiSeret);
+
+  function papar() {
+    paparKumpulan();
+    paparPill();
+    kandungan.innerHTML = '';
+
+    const carianRendah = kataCarian.trim().toLowerCase();
+    let jumlahDipapar = 0;
+
+    susunanKategori.forEach((kat) => {
+      if (kumpulanAktif !== 'semua' && kumpulanKategori[kat] !== kumpulanAktif) return;
+      if (kategoriAktif !== 'Semua' && kategoriAktif !== kat) return;
+
+      const item2 = barangan.filter((b) =>
+        b.kategori === kat && b.nama.toLowerCase().includes(carianRendah)
+      );
+      if (item2.length === 0) return;
+
+      jumlahDipapar += item2.length;
+
+      const seksyen = document.createElement('div');
+      seksyen.className = 'seksyen';
+
+      const h2 = document.createElement('h2');
+      const ikonSpan = document.createElement('span');
+      ikonSpan.className = 'ikon';
+      ikonSpan.textContent = ikonKategori[kat] || '';
+      const labelSpan = document.createElement('span');
+      labelSpan.textContent = kat;
+      const kiraanSpan = document.createElement('span');
+      kiraanSpan.className = 'kiraan';
+      kiraanSpan.textContent = '(' + item2.length + ')';
+      h2.appendChild(ikonSpan);
+      h2.appendChild(labelSpan);
+      h2.appendChild(kiraanSpan);
+      seksyen.appendChild(h2);
+
+      const senarai = document.createElement('div');
+      senarai.className = 'senarai';
+
+      item2.forEach((item) => {
+        const i = barangan.indexOf(item);
+        const baris = document.createElement('div');
+        baris.className = 'baris';
+
+        const kiri = document.createElement('div');
+        const nama = document.createElement('span');
+        nama.className = 'nama';
+        nama.textContent = item.nama;
+        const unitTag = document.createElement('span');
+        unitTag.className = 'unit-tag';
+        unitTag.textContent = '· ' + item.unit;
+        kiri.appendChild(nama);
+        kiri.appendChild(unitTag);
+
+        const kanan = document.createElement('div');
+
+        if (modeEdit) {
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.step = '0.01';
+          input.min = '0';
+          input.className = 'harga-input';
+          input.value = item.harga;
+          input.addEventListener('change', (e) => {
+            const nilai = parseFloat(e.target.value);
+            barangan[i].harga = isNaN(nilai) || nilai < 0 ? item.harga : nilai;
+          });
+          kanan.appendChild(input);
+        } else {
+          const span = document.createElement('span');
+          span.className = 'harga';
+          span.textContent = 'RM' + item.harga.toFixed(2).replace(/\.00$/, '');
+          kanan.appendChild(span);
+        }
+
+        baris.appendChild(kiri);
+        baris.appendChild(kanan);
+        senarai.appendChild(baris);
+      });
+
+      seksyen.appendChild(senarai);
+      kandungan.appendChild(seksyen);
+    });
+
+    if (jumlahDipapar === 0) {
+      const kosong = document.createElement('p');
+      kosong.className = 'tiada-hasil';
+      kosong.textContent = 'Tiada barang sepadan dengan carian "' + kataCarian + '".';
+      kandungan.appendChild(kosong);
+    }
+  }
+
+  carianInput.addEventListener('input', (e) => {
+    kataCarian = e.target.value;
+    kosongBtn.style.display = kataCarian ? 'block' : 'none';
+    papar();
+  });
+
+  kosongBtn.addEventListener('click', () => {
+    kataCarian = '';
+    carianInput.value = '';
+    kosongBtn.style.display = 'none';
+    papar();
+  });
+
+  btnKemaskini.addEventListener('click', () => {
+    if (!modeEdit) {
+      modeEdit = true;
+      btnKemaskini.textContent = 'Simpan';
+      btnBatal.style.display = 'inline-block';
+      statusMsg.classList.remove('show');
+    } else {
+      modeEdit = false;
+      btnKemaskini.textContent = 'Kemaskini Harga';
+      btnBatal.style.display = 'none';
+      statusMsg.classList.add('show');
+      setTimeout(() => statusMsg.classList.remove('show'), 2500);
+    }
+    papar();
+  });
+
+  btnBatal.addEventListener('click', () => {
+    modeEdit = false;
+    btnKemaskini.textContent = 'Kemaskini Harga';
+    btnBatal.style.display = 'none';
+    papar();
+  });
+
+  // ------------------------------------------------------------------
+  // TREND HARGA — 5 barang utama
+  // PENTING: item_code sebenar dari lookup_item.parquet TIDAK dapat saya
+  // ekstrak dalam sesi ini — fail itu Parquet binari yang perlu pandas/
+  // pyarrow + akses internet langsung, dan sandbox saya tiada akses
+  // rangkaian langsung ke storage.data.gov.my. Lihat nota lengkap dalam
+  // jawapan chat untuk cara isi item_code sebenar (skrip Colab disediakan).
+  //
+  // Data di bawah SUDAH dikemaskini (Sept 2026) menggunakan angka yang
+  // dilaporkan secara terbuka berdasarkan data PriceCatcher KPDN, bukan
+  // tarikan langsung dari API — titik hujung (nilai terkini) dipetik dari
+  // sumber sebenar; titik-titik pertengahan dianggarkan secara munasabah
+  // untuk bentuk trend. Ubi Kentang kekal anggaran sepenuhnya kerana tiada
+  // laporan khusus dijumpai untuk barang ini.
+  const trenBarangUtama = [
+    { nama: 'Beras', unit: '10kg', ikon: '🌾', data: [28.80, 28.50, 28.20, 28.00, 27.60, 27.20] },
+    { nama: 'Minyak Masak', unit: '1kg', ikon: '🫒', data: [6.30, 6.45, 6.65, 6.85, 7.05, 7.00] },
+    { nama: 'Ayam', unit: '1kg', ikon: '🍗', data: [8.76, 8.95, 9.10, 9.30, 9.56, 9.29] },
+    { nama: 'Telur Gred A', unit: '10 biji', ikon: '🥚', data: [5.42, 5.30, 5.15, 5.05, 4.95, 5.00] },
+    { nama: 'Ubi Kentang', unit: '1kg', ikon: '🥔', data: [3.80, 4.10, 4.30, 4.00, 3.90, 4.00] }
+  ];
+
+  const trendGrid = document.getElementById('trendGrid');
+
+  function binaSparkline(data, warna) {
+    const lebar = 130, tinggi = 34, sisi = 3;
+    const minNilai = Math.min(...data);
+    const maxNilai = Math.max(...data);
+    const julat = maxNilai - minNilai || 1;
+
+    const titik = data.map((v, i) => {
+      const x = sisi + (i / (data.length - 1)) * (lebar - sisi * 2);
+      const y = tinggi - sisi - ((v - minNilai) / julat) * (tinggi - sisi * 2);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+
+    const titikAkhir = titik[titik.length - 1].split(',');
+
+    return '<svg viewBox="0 0 ' + lebar + ' ' + tinggi + '" width="100%" height="' + tinggi + '">' +
+      '<polyline points="' + titik.join(' ') + '" fill="none" stroke="' + warna + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>' +
+      '<circle cx="' + titikAkhir[0] + '" cy="' + titikAkhir[1] + '" r="3" fill="' + warna + '"></circle>' +
+      '</svg>';
+  }
+
+  function paparTrend() {
+    trendGrid.innerHTML = '';
+
+    trenBarangUtama.forEach((barang) => {
+      const nilaiAwal = barang.data[0];
+      const nilaiAkhir = barang.data[barang.data.length - 1];
+      const peratusUbah = ((nilaiAkhir - nilaiAwal) / nilaiAwal) * 100;
+
+      let statusKelas = 'tetap';
+      let ikonArah = '▬';
+      if (peratusUbah > 0.5) { statusKelas = 'naik'; ikonArah = '▲'; }
+      else if (peratusUbah < -0.5) { statusKelas = 'turun'; ikonArah = '▼'; }
+
+      const warnaGaris = statusKelas === 'naik' ? '#b8462f' : statusKelas === 'turun' ? '#3f6b3f' : '#6f6656';
+
+      const kad = document.createElement('div');
+      kad.className = 'trend-kad';
+      kad.innerHTML =
+        '<div class="tajuk">' +
+          '<span class="nama">' + barang.ikon + ' ' + barang.nama + '</span>' +
+        '</div>' +
+        '<div class="harga-semasa">RM' + nilaiAkhir.toFixed(2) + ' <span style="font-weight:400;font-size:0.75rem;color:var(--ink-soft);">/ ' + barang.unit + '</span></div>' +
+        '<span class="perubahan ' + statusKelas + '">' + ikonArah + ' ' + Math.abs(peratusUbah).toFixed(1) + '%</span>' +
+        binaSparkline(barang.data, warnaGaris);
+      trendGrid.appendChild(kad);
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // SUMBER DATA RASMI — pautan terus ke portal kerajaan yang benar-benar
+  // memaparkan harga terkini, memandangkan aplikasi ini sendiri tidak
+  // boleh menarik data automatik dari pelayan KPDN.
+  // ------------------------------------------------------------------
+  const sumberRasmi = [
+    {
+      nama: 'KPDN PriceCatcher',
+      desk: 'Banding harga 480 barangan di pasar basah, pasaraya & kedai runcit ikut lokasi',
+      url: 'https://pricecatcher.kpdn.gov.my/'
+    },
+    {
+      nama: 'data.gov.my — Dataset PriceCatcher',
+      desk: 'Data terbuka rasmi KPDN (dimuat turun bulanan) untuk analisis lanjut',
+      url: 'https://data.gov.my/data-catalogue/pricecatcher'
+    },
+    {
+      nama: 'FAMA — Harga Pasaran Tani',
+      desk: 'Harga sayur-sayuran & buah-buahan terkini di pasar tani seluruh negara',
+      url: 'https://www.fama.gov.my/harga-pasaran-terkini'
+    },
+    {
+      nama: 'OpenDOSM — Indeks Harga Pengguna',
+      desk: 'Trend inflasi rasmi jabatan statistik bagi kumpulan barangan utama',
+      url: 'https://open.dosm.gov.my/ms-MY/dashboard/consumer-prices'
+    }
+  ];
+
+  const sumberSenarai = document.getElementById('sumberSenarai');
+
+  function paparSumberRasmi() {
+    sumberSenarai.innerHTML = '';
+    sumberRasmi.forEach((s) => {
+      const a = document.createElement('a');
+      a.className = 'sumber-pautan';
+      a.href = s.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.innerHTML =
+        '<span><span class="nama-sumber">' + s.nama + '</span>' +
+        '<span class="desk-sumber">' + s.desk + '</span></span>' +
+        '<span class="anak-panah">↗</span>';
+      sumberSenarai.appendChild(a);
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // SAMBUNGAN AUTOMATIK — cuba tarik data/trend.json dari repo GitHub
+  // yang dijana oleh pipeline ETL (rujuk seni-bina-backend-harga-barangan.md).
+  // TUKAR URL DI BAWAH kepada repo GitHub sebenar awak selepas ETL & GitHub
+  // Actions disediakan. Sehingga itu, fetch akan gagal secara senyap dan
+  // app terus guna data rujukan (trenBarangUtama) yang sudah dikemaskini
+  // di atas — jadi app tetap berfungsi & tak pernah "rosak" akibat fetch gagal.
+  const URL_TREND_JSON = 'https://cdn.jsdelivr.net/gh/NAMA_PENGGUNA/NAMA_REPO@main/data/trend.json';
+  const statusTrendFetch = document.getElementById('statusTrendFetch');
+
+  async function muatTrendSebenar() {
+    try {
+      const res = await fetch(URL_TREND_JSON);
+      if (!res.ok) throw new Error('Respons tidak OK: ' + res.status);
+      const json = await res.json();
+
+      if (!json.trend || !Array.isArray(json.trend)) {
+        throw new Error('Format JSON tidak dijangka');
+      }
+
+      trenBarangUtama.length = 0;
+      const ikonPeta = { 'Beras': '🌾', 'Minyak Masak': '🫒', 'Ayam': '🍗', 'Telur Gred A': '🥚', 'Ubi Kentang': '🥔' };
+      json.trend.forEach((b) => {
+        trenBarangUtama.push({ ...b, ikon: ikonPeta[b.nama] || '🛒' });
+      });
+
+      const tarikh = new Date(json.kemaskini_terakhir).toLocaleDateString('ms-MY', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      });
+      statusTrendFetch.textContent = '✅ Data disambung automatik — kemaskini terakhir: ' + tarikh;
+    } catch (ralat) {
+      // Fallback selamat: kekal guna data rujukan sedia ada dalam trenBarangUtama
+      statusTrendFetch.textContent = 'ℹ️ Belum sambung ke repo automatik — memaparkan data rujukan terkini.';
+      console.info('muatTrendSebenar: guna data rujukan (fallback). Sebab:', ralat.message);
+    }
+    paparTrend();
+  }
+
+  muatTrendSebenar();
+  paparSumberRasmi();
+
+  papar();
+</script>
+
+</body>
+</html>
