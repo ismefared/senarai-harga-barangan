@@ -277,12 +277,36 @@
   .baris {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding: 14px 16px;
     border-top: 1px solid var(--kertas-line);
+    transition: background 0.15s ease;
   }
   .baris:first-child { border-top: none; }
+  .baris.dipilih { background: #fbf3dd; }
+
+  .btn-mark {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid var(--kertas-line);
+    background: var(--white);
+    color: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    padding: 0;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  .btn-mark:hover { border-color: var(--kunyit); }
+  .btn-mark.dipilih {
+    background: var(--papan);
+    border-color: var(--papan);
+    color: var(--white);
+  }
 
   .baris .nama {
     font-size: 1rem;
@@ -331,6 +355,131 @@
     justify-content: flex-end;
     gap: 10px;
   }
+
+  /* --- Butang troli terapung (FAB) --- */
+  .fab-troli {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    position: fixed;
+    bottom: 22px;
+    right: 20px;
+    background: var(--papan);
+    color: var(--kertas);
+    border: none;
+    border-radius: 999px;
+    padding: 14px 22px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.86rem;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(28, 59, 54, 0.35);
+    z-index: 30;
+  }
+  .fab-troli:hover { background: var(--papan-dark); }
+
+  /* --- Overlay "halaman" senarai pilihan --- */
+  .overlay-troli {
+    display: none;
+    flex-direction: column;
+    position: fixed;
+    inset: 0;
+    background: var(--kertas);
+    z-index: 50;
+  }
+  .overlay-troli.aktif { display: flex; }
+
+  .overlay-header {
+    background: var(--papan);
+    background-image: linear-gradient(180deg, var(--papan) 0%, var(--papan-dark) 100%);
+    color: var(--kertas);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+  }
+  .overlay-header button {
+    background: none;
+    border: none;
+    color: var(--kertas);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+
+  .overlay-senarai {
+    flex: 1;
+    overflow-y: auto;
+    max-width: 640px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 16px 20px;
+  }
+  .overlay-senarai .baris { background: var(--white); border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; border-top: none; }
+  .overlay-kosong {
+    text-align: center;
+    color: var(--ink-soft);
+    padding: 60px 20px;
+    font-size: 0.95rem;
+  }
+  .btn-buang-item {
+    background: none;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px 6px;
+  }
+  .btn-buang-item:hover { color: var(--cili); }
+
+  .overlay-footer {
+    max-width: 640px;
+    width: 100%;
+    margin: 0 auto;
+    border-top: 1px solid var(--kertas-line);
+    background: var(--white);
+    padding: 16px 20px 24px;
+    flex-shrink: 0;
+  }
+  .overlay-jumlah-baris {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--papan);
+  }
+
+  /* --- Header boleh lipat (trend & sumber rasmi) --- */
+  .lipat-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    padding: 0 0 4px 2px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--kunyit-dark);
+    cursor: pointer;
+  }
+  .lipat-header .lipat-ikon {
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    transition: transform 0.15s ease;
+  }
+  .lipat-header[aria-expanded="true"] .lipat-ikon {
+    transform: rotate(90deg);
+  }
+  .lipat-kandungan[hidden] { display: none; }
 
   /* --- Trend harga barang utama --- */
   .trend-bhg {
@@ -504,16 +653,26 @@
   </div>
 
   <div class="trend-bhg">
-    <h2>📈 Trend Harga — 5 Barang Utama</h2>
-    <p class="trend-nota">Titik terkini dipetik dari laporan awam data PriceCatcher KPDN (Julai 2026); titik pertengahan dianggarkan. <strong>Belum sambungan automatik</strong> — lihat panduan seni bina backend untuk sambung terus.</p>
-    <p class="trend-nota" id="statusTrendFetch" style="font-style: italic;"></p>
-    <div class="trend-grid" id="trendGrid"></div>
+    <button class="lipat-header" id="toggleTrend" aria-expanded="false">
+      <span>📈 Trend Harga — 5 Barang Utama</span>
+      <span class="lipat-ikon">▶</span>
+    </button>
+    <div class="lipat-kandungan" id="trendKandungan" hidden>
+      <p class="trend-nota">Titik terkini dipetik dari laporan awam data PriceCatcher KPDN (Julai 2026); titik pertengahan dianggarkan. <strong>Belum sambungan automatik</strong> — lihat panduan seni bina backend untuk sambung terus.</p>
+      <p class="trend-nota" id="statusTrendFetch" style="font-style: italic;"></p>
+      <div class="trend-grid" id="trendGrid"></div>
+    </div>
   </div>
 
   <div class="sumber-bhg">
-    <h2>🔗 Sumber Data Rasmi</h2>
-    <p>Aplikasi ini <strong>tidak boleh menyambung terus secara automatik masa nyata</strong> ke pangkalan data KPDN kerana sebab teknikal (lihat penjelasan di bawah chat). Gunakan pautan rasmi ini untuk semak harga terkini ikut lokasi/premis anda:</p>
-    <div class="sumber-senarai" id="sumberSenarai"></div>
+    <button class="lipat-header" id="toggleSumber" aria-expanded="false">
+      <span>🔗 Sumber Data Rasmi</span>
+      <span class="lipat-ikon">▶</span>
+    </button>
+    <div class="lipat-kandungan" id="sumberKandungan" hidden>
+      <p>Aplikasi ini <strong>tidak boleh menyambung terus secara automatik masa nyata</strong> ke pangkalan data KPDN kerana sebab teknikal (lihat penjelasan di bawah chat). Gunakan pautan rasmi ini untuk semak harga terkini ikut lokasi/premis anda:</p>
+      <div class="sumber-senarai" id="sumberSenarai"></div>
+    </div>
   </div>
 
 
@@ -546,6 +705,23 @@
     <button class="utama" id="btnKemaskini">Kemaskini Harga</button>
   </div>
   <div class="status" id="statusMsg">Harga telah dikemaskini.</div>
+  <button class="fab-troli" id="fabTroli" aria-label="Lihat senarai pilihan saya"></button>
+
+  <div class="overlay-troli" id="overlayTroli">
+    <div class="overlay-header">
+      <span>🛒 Senarai Pilihan Saya</span>
+      <button id="tutupOverlay" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="overlay-senarai" id="overlaySenarai"></div>
+    <div class="overlay-footer">
+      <div class="overlay-jumlah-baris">
+        <span>Jumlah Keseluruhan</span>
+        <span id="overlayJumlah">RM0.00</span>
+      </div>
+      <button class="sekunder" id="btnKosongkanTroli" style="display: inline-block; width: 100%; margin-top: 12px;">Kosongkan Semua</button>
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -767,6 +943,8 @@
   let kataCarian = '';
   let kategoriAktif = 'Semua';
   let kumpulanAktif = 'semua';
+  const kategoriDikuncup = {}; // { 'Protein': true } bermakna kategori itu dilipat/tersembunyi
+  const pilihanBarang = new Set(); // simpan index barang (dalam array 'barangan') yang ditanda
 
   const kandungan = document.getElementById('kandungan');
   const kumpulanToggle = document.getElementById('kumpulanToggle');
@@ -920,7 +1098,10 @@
       const seksyen = document.createElement('div');
       seksyen.className = 'seksyen';
 
+      const dikuncup = !!kategoriDikuncup[kat];
+
       const h2 = document.createElement('h2');
+      h2.style.cursor = 'pointer';
       const ikonSpan = document.createElement('span');
       ikonSpan.className = 'ikon';
       ikonSpan.textContent = ikonKategori[kat] || '';
@@ -929,20 +1110,45 @@
       const kiraanSpan = document.createElement('span');
       kiraanSpan.className = 'kiraan';
       kiraanSpan.textContent = '(' + item2.length + ')';
+      const chevronSpan = document.createElement('span');
+      chevronSpan.className = 'lipat-ikon';
+      chevronSpan.style.marginLeft = '4px';
+      chevronSpan.style.order = '1';
+      chevronSpan.textContent = dikuncup ? '▶' : '▼';
       h2.appendChild(ikonSpan);
       h2.appendChild(labelSpan);
       h2.appendChild(kiraanSpan);
+      h2.appendChild(chevronSpan);
+      h2.addEventListener('click', () => {
+        kategoriDikuncup[kat] = !kategoriDikuncup[kat];
+        papar();
+      });
       seksyen.appendChild(h2);
 
       const senarai = document.createElement('div');
       senarai.className = 'senarai';
+      senarai.hidden = dikuncup;
 
       item2.forEach((item) => {
         const i = barangan.indexOf(item);
         const baris = document.createElement('div');
-        baris.className = 'baris';
+        baris.className = 'baris' + (pilihanBarang.has(i) ? ' dipilih' : '');
+
+        const btnMark = document.createElement('button');
+        btnMark.className = 'btn-mark' + (pilihanBarang.has(i) ? ' dipilih' : '');
+        btnMark.innerHTML = '✓';
+        btnMark.setAttribute('aria-pressed', pilihanBarang.has(i) ? 'true' : 'false');
+        btnMark.setAttribute('aria-label', 'Tandakan ' + item.nama);
+        btnMark.addEventListener('click', (e) => {
+          e.stopPropagation();
+          togglePilihBarang(i);
+          baris.classList.toggle('dipilih', pilihanBarang.has(i));
+          btnMark.classList.toggle('dipilih', pilihanBarang.has(i));
+          btnMark.setAttribute('aria-pressed', pilihanBarang.has(i) ? 'true' : 'false');
+        });
 
         const kiri = document.createElement('div');
+        kiri.style.flex = '1';
         const nama = document.createElement('span');
         nama.className = 'nama';
         nama.textContent = item.nama;
@@ -973,6 +1179,7 @@
           kanan.appendChild(span);
         }
 
+        baris.appendChild(btnMark);
         baris.appendChild(kiri);
         baris.appendChild(kanan);
         senarai.appendChild(baris);
@@ -1151,7 +1358,7 @@
   // Actions disediakan. Sehingga itu, fetch akan gagal secara senyap dan
   // app terus guna data rujukan (trenBarangUtama) yang sudah dikemaskini
   // di atas — jadi app tetap berfungsi & tak pernah "rosak" akibat fetch gagal.
-  const URL_TREND_JSON = 'https://cdn.jsdelivr.net/gh/ismefared/senarai-harga-barangan@main/data/trend.json';
+  const URL_TREND_JSON = 'https://cdn.jsdelivr.net/gh/NAMA_PENGGUNA/NAMA_REPO@main/data/trend.json';
   const statusTrendFetch = document.getElementById('statusTrendFetch');
 
   async function muatTrendSebenar() {
@@ -1184,6 +1391,124 @@
 
   muatTrendSebenar();
   paparSumberRasmi();
+
+  // ------------------------------------------------------------------
+  // LIPAT/BUKA — trend & sumber rasmi (default tertutup, klik untuk buka)
+  // ------------------------------------------------------------------
+  function suapLipat(idHeader, idKandungan) {
+    const header = document.getElementById(idHeader);
+    const kandungan = document.getElementById(idKandungan);
+    header.addEventListener('click', () => {
+      const sedangBuka = header.getAttribute('aria-expanded') === 'true';
+      header.setAttribute('aria-expanded', String(!sedangBuka));
+      kandungan.hidden = sedangBuka;
+      header.querySelector('.lipat-ikon').textContent = sedangBuka ? '▶' : '▼';
+    });
+  }
+  suapLipat('toggleTrend', 'trendKandungan');
+  suapLipat('toggleSumber', 'sumberKandungan');
+
+  // ------------------------------------------------------------------
+  // TROLI / SENARAI PILIHAN — tanda barang, lihat jumlah, di "halaman" lain
+  // ------------------------------------------------------------------
+  const fabTroli = document.getElementById('fabTroli');
+  const overlayTroli = document.getElementById('overlayTroli');
+  const overlaySenarai = document.getElementById('overlaySenarai');
+  const overlayJumlah = document.getElementById('overlayJumlah');
+  const tutupOverlay = document.getElementById('tutupOverlay');
+  const btnKosongkanTroli = document.getElementById('btnKosongkanTroli');
+
+  function togglePilihBarang(i) {
+    if (pilihanBarang.has(i)) pilihanBarang.delete(i);
+    else pilihanBarang.add(i);
+    kemaskiniFAB();
+  }
+
+  function kiraJumlahPilihan() {
+    let jumlah = 0;
+    pilihanBarang.forEach((i) => { jumlah += barangan[i].harga; });
+    return jumlah;
+  }
+
+  function kemaskiniFAB() {
+    const kiraan = pilihanBarang.size;
+    if (kiraan === 0) {
+      fabTroli.style.display = 'none';
+      return;
+    }
+    fabTroli.style.display = 'flex';
+    fabTroli.textContent = '🛒 ' + kiraan + ' dipilih · RM' + kiraJumlahPilihan().toFixed(2);
+  }
+
+  function paparOverlayTroli() {
+    overlaySenarai.innerHTML = '';
+
+    if (pilihanBarang.size === 0) {
+      const kosong = document.createElement('p');
+      kosong.className = 'overlay-kosong';
+      kosong.textContent = 'Tiada barang dipilih lagi. Tandakan barang dalam senarai untuk tambah ke sini.';
+      overlaySenarai.appendChild(kosong);
+    } else {
+      pilihanBarang.forEach((i) => {
+        const item = barangan[i];
+        const baris = document.createElement('div');
+        baris.className = 'baris';
+
+        const kiri = document.createElement('div');
+        kiri.style.flex = '1';
+        const nama = document.createElement('span');
+        nama.className = 'nama';
+        nama.textContent = item.nama;
+        const unitTag = document.createElement('span');
+        unitTag.className = 'unit-tag';
+        unitTag.textContent = '· ' + item.unit;
+        kiri.appendChild(nama);
+        kiri.appendChild(unitTag);
+
+        const kanan = document.createElement('div');
+        kanan.style.display = 'flex';
+        kanan.style.alignItems = 'center';
+        kanan.style.gap = '8px';
+        const harga = document.createElement('span');
+        harga.className = 'harga';
+        harga.textContent = 'RM' + item.harga.toFixed(2).replace(/\.00$/, '');
+        const btnBuang = document.createElement('button');
+        btnBuang.className = 'btn-buang-item';
+        btnBuang.innerHTML = '&times;';
+        btnBuang.setAttribute('aria-label', 'Buang ' + item.nama + ' dari senarai pilihan');
+        btnBuang.addEventListener('click', () => {
+          pilihanBarang.delete(i);
+          paparOverlayTroli();
+          kemaskiniFAB();
+          papar(); // segerakkan semula tanda pada senarai utama
+        });
+        kanan.appendChild(harga);
+        kanan.appendChild(btnBuang);
+
+        baris.appendChild(kiri);
+        baris.appendChild(kanan);
+        overlaySenarai.appendChild(baris);
+      });
+    }
+
+    overlayJumlah.textContent = 'RM' + kiraJumlahPilihan().toFixed(2);
+  }
+
+  fabTroli.addEventListener('click', () => {
+    paparOverlayTroli();
+    overlayTroli.classList.add('aktif');
+  });
+
+  tutupOverlay.addEventListener('click', () => {
+    overlayTroli.classList.remove('aktif');
+  });
+
+  btnKosongkanTroli.addEventListener('click', () => {
+    pilihanBarang.clear();
+    paparOverlayTroli();
+    kemaskiniFAB();
+    papar();
+  });
 
   papar();
 </script>
